@@ -15,6 +15,8 @@ logging.basicConfig(level=logging.INFO)
 BOND_FILE = 'bond.xlsx'
 STOCK_FILE = 'stock.xlsx'
 RATE_FILE = 'rate.xlsx'
+SAVE_FILE = 'result.csv'
+FIG_FILE = 'result.png'
 
 # Input data
 #---------------------------------------
@@ -42,7 +44,7 @@ for idx in range(Nd):
         r[idx] = close_stock[idx] / close_stock[idx-1] - 1
 
 # 计算股票的平均收益率r_mean
-#FIXME: how to handle nan in mean()
+#NOTE: nan will be excluded in  mean()
 r_mean = r.mean()
 
 # 计算股票日波动率sigma_s
@@ -50,7 +52,6 @@ lambd = 0.94                       # 衰减因子
 M = 20                             # 迭代天数
 sigma_s = pd.Series(np.nan, index=range(Nd))
 #TODO: using iterators
-#FIXME: 前面20天的如何计算
 for idx in range(M, Nd):       # skip first M days
     sum = 0
     for day in range(1, M+1):
@@ -84,7 +85,7 @@ for idx in range(Nd):
         ro[idx] = opt_price[idx] / opt_price[idx-1] - 1
 
 # 计算期权价格的平均收益率ro_mean
-#FIXME: how to handle nan in mean()
+#NOTE: nan will be excluded in  mean()
 ro_mean = ro.mean()
 
 # 计算隐含波动率sigma_c
@@ -92,7 +93,6 @@ lambd = 0.94
 M = 20
 sigma_c = pd.Series(np.nan, index=range(Nd))
 #TODO: using iterators
-#FIXME: 前面20天的如何计算
 for idx in range(M,Nd):  # skip first M days
     sum = 0
     for day in range(1, M+1):
@@ -145,6 +145,7 @@ close_pos = ((sigma_s - sigma_c) <= phi2)
 if close_pos[open_pos].size:  # open position not none
     close_pos[0:close_pos[open_pos].index[0]] = False
 
+result = pd.DataFrame(columns=['open','close','days','profit'])
 count = 1
 while True in open_pos.unique():
     ''' loop until no more open position left '''
@@ -186,12 +187,22 @@ while True in open_pos.unique():
     R = (CB_T - CB_t) - delta*(S_T - S_t)
     logging.info('Arbitrage profit: {0}'.format(R))
 
+    res_dict = {'open':open_day['Date'], 'close':close_day['Date'],
+                   'days':t_alpha, 'profit':R}
+    result = result.append(res_dict, ignore_index=True)
+
 
 
 
 # Output
 #----------------------------------------
+# output result in to file
+result.to_csv(SAVE_FILE)
+# plot result
 plt.plot(bond['Date'], sigma_s, bond['Date'], sigma_c,
         bond['Date'], sigma_s-sigma_c)
 plt.legend(['Sigma_s', 'Sigma_c', 'Sigma_s - Sigma_c'])
+# save plot to file
+plt.savefig(FIG_FILE)
+# show the plot
 plt.show()
