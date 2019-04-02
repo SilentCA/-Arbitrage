@@ -2,6 +2,7 @@
 import pandas as pd
 import numpy as np
 from scipy.stats import norm
+import scipy.optimize
 import matplotlib.pyplot as plt
 import logging
 
@@ -76,28 +77,37 @@ conversion = bond['clause_conversion2_conversionproportion']  # 转换比例
 for idx in range(Nd):
     opt_price[idx] = (swap_price[idx] - V) / conversion[idx]
 
-# 可转债的隐含波动率sigma_c，即期权价格的波动率
-# 期权价格日收益率ro
-ro = pd.Series(np.nan, index=range(Nd))  # init
-#TODO: using iterators
+# 计算隐含波动率sigma_c
+# 隐含波动率函数
+def optionPriceFunc(sigma_c, opt_price, S, K, r_rf, T, t_now):
+    # 计算d1
+    d1 = ( np.log(S/K) + (r_rf + np.square(sigma_c)/2) * (T-t_now) ) \
+            / ( sigma_c * np.sqrt(T-t_now) )
+    d2 = d1 - sigma_c * np.sqrt(T-t_now)
+    return S*norm.pdf(d1) - K*np.exp(-1*r_rf*(T-t_now))*norm.pdf(d2)\
+            - opt_price
+
+
+# 隐含波动率
+sigma_c = pd.Series(np.nan, index=range(Nd))
 for idx in range(Nd):
     if idx:  # skip first day
-        ro[idx] = opt_price[idx] / opt_price[idx-1] - 1
+        # 当天股票价格
+        #FIXME: 先选出该交易日的数据
+        # 当天股票价格
+        S = stock[stock['Date'] == bond['Date'][idx]]['close_stock'].iloc[0]
+        # 当天转换价格
+        K = bond['clause_conversion2_swapshareprice'][idx]
+        # 无风险利率
+        r_rf = rate[rate['Date'] == bond['Date'][idx]]['rate'].iloc[0]          
+        # 债券到期年限
+        T = bond[bond['Date']==bond['Date'][idx]]['term'].iloc[0]               
+        # 当天时间
+        t_now = ((bond['Date'][idx] - bond['carrydate'][idx]).days + 1) / 365
+        sigma_c[idx] = scipy.optimize.fsolve(optionPriceFunc, 0.2, 
+                            args=(opt_price[idx],S,K,r_rf,T,t_now),
+                            maxfev=1000000,xtol=1e-12)
 
-# 计算期权价格的平均收益率ro_mean
-#NOTE: nan will be excluded in  mean()
-ro_mean = ro.mean()
-
-# 计算隐含波动率sigma_c
-lambd = 0.94
-M = 20
-sigma_c = pd.Series(np.nan, index=range(Nd))
-#TODO: using iterators
-for idx in range(M,Nd):  # skip first M days
-    sum = 0
-    for day in range(1, M+1):
-        sum = sum + np.power(lambd,day-1) * np.square(ro[idx+1-day] - ro_mean)
-    sigma_c[idx] = np.sqrt(Nd * (1-lambd) * sum)
 
 sigma_dif = sigma_s - sigma_c
 logging.info('----------Statistics of sigma_s------------')
@@ -126,6 +136,7 @@ def openPosition(open_day, bond, stock, rate):
     r_rf = rate[rate['Date'] == open_day['Date']]['rate'].iloc[0]          # 无风险利率
     T = bond[bond['Date']==open_day['Date']]['term'].iloc[0]               # 债券到期年限
     sigma_s_od = sigma_s[open_day.name]                         # 开仓日股票波动率
+
     d1 = ( np.log(S/K) + (r_rf + np.square(sigma_s_od)/2) * (T-open_t) ) \
             / ( sigma_s_od * np.sqrt(T-open_t) )
 
@@ -145,6 +156,7 @@ close_pos = ((sigma_s - sigma_c) <= phi2)
 if close_pos[open_pos].size:  # open position not none
     close_pos[0:close_pos[open_pos].index[0]] = False
 
+# arbitrage result
 result = pd.DataFrame(columns=['open','close','days','profit'])
 count = 1
 while True in open_pos.unique():
@@ -187,6 +199,7 @@ while True in open_pos.unique():
     R = (CB_T - CB_t) - delta*(S_T - S_t)
     logging.info('Arbitrage profit: {0}'.format(R))
 
+    # store result
     res_dict = {'open':open_day['Date'], 'close':close_day['Date'],
                    'days':t_alpha, 'profit':R}
     result = result.append(res_dict, ignore_index=True)
