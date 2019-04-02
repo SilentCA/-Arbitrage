@@ -2,6 +2,7 @@
 import pandas as pd
 import numpy as np
 from scipy.stats import norm
+import matplotlib.pyplot as plt
 import logging
 
 '''
@@ -26,10 +27,11 @@ logging.info('Load data complete.')
 # Calculate Sigma_s and Sigma_c
 #---------------------------------------
 logging.info('Calculate sigma_s and sigma_c.')
+#FIXME: definition of N and Nd
 # 可转债数据天数Nd
-Nd = stock.shape[0]
+Nd = bond.shape[0]
 # 交易天数N 
-N = (stock['Date'][0] - stock['Date'][stock['Date'].size-1]).days
+N = (stock['Date'][len(stock)-1] - stock['Date'][0]).days
 
 # 股票日收益率r
 r = pd.Series(np.nan, index=range(Nd))  # init
@@ -37,7 +39,7 @@ close_stock = stock['close_stock']
 #TODO: using iterators
 for idx in range(Nd):
     if idx:  # skip first day
-        r[idx] = close_stock[idx] / close_stock[idx-1]
+        r[idx] = close_stock[idx] / close_stock[idx-1] - 1
 
 # 计算股票的平均收益率r_mean
 #FIXME: how to handle nan in mean()
@@ -49,28 +51,26 @@ M = 20                             # 迭代天数
 sigma_s = pd.Series(np.nan, index=range(Nd))
 #TODO: using iterators
 #FIXME: 前面20天的如何计算
-for idx in range(20,Nd):
+for idx in range(M, Nd):       # skip first M days
     sum = 0
     for day in range(1, M+1):
         sum = sum + np.power(lambd,day-1) * np.square(r[idx+1-day] - r_mean)
-    sigma_s[idx] = np.sqrt(Nd * (1-lambd) * sum)
+    sigma_s[idx] = np.sqrt(N * (1-lambd) * sum)
 
 # 可转债的到期年限T
-#FIXME: T应当是整数
-T = (bond['maturitydate'][Nd-1] - bond['ipo_date'][0]).days + 1
-T = int(np.ceil(T / 365))
+T = bond['term'][0]
 
 # 纯债价格V
 C = 100                                  # 可转债面值
 inter = bond['couponrate'][0] / 100      # 可转债利率
 V = 0                                    # 纯债价格
-for idx in range(1, T+1):
+for idx in range(1, 2*T+1):
     V = V + (C*inter/2) / np.power(1+inter/2,idx) + \
         C / np.power(1+inter/2,2*T)
 
 # 期权价格
 opt_price = pd.Series(np.nan, index=range(Nd))                # 期权价格
-swap_price = bond['close']        # 可转债价格
+swap_price = bond['close']                                    # 可转债价格
 conversion = bond['clause_conversion2_conversionproportion']  # 转换比例
 for idx in range(Nd):
     opt_price[idx] = (swap_price[idx] - V) / conversion[idx]
@@ -81,7 +81,7 @@ ro = pd.Series(np.nan, index=range(Nd))  # init
 #TODO: using iterators
 for idx in range(Nd):
     if idx:  # skip first day
-        ro[idx] = opt_price[idx] / opt_price[idx-1]
+        ro[idx] = opt_price[idx] / opt_price[idx-1] - 1
 
 # 计算期权价格的平均收益率ro_mean
 #FIXME: how to handle nan in mean()
@@ -93,14 +93,26 @@ M = 20
 sigma_c = pd.Series(np.nan, index=range(Nd))
 #TODO: using iterators
 #FIXME: 前面20天的如何计算
-for idx in range(20,Nd):  # skip first 20 days
+for idx in range(M,Nd):  # skip first M days
     sum = 0
     for day in range(1, M+1):
         sum = sum + np.power(lambd,day-1) * np.square(ro[idx+1-day] - ro_mean)
     sigma_c[idx] = np.sqrt(Nd * (1-lambd) * sum)
 
+sigma_dif = sigma_s - sigma_c
+logging.info('----------Statistics of sigma_s------------')
+logging.info('Max: {0}, Min: {1}, Mean: {2}'.format(
+    sigma_s.max(), sigma_s.min(), sigma_s.mean()) )
+logging.info('----------Statistics of sigma_c------------')
+logging.info('Max: {0}, Min: {1}, Mean: {2}'.format(
+    sigma_c.max(), sigma_c.min(), sigma_c.mean()) )
+logging.info('----------Statistics of sigma_s - sigma_c------------')
+logging.info('Max: {0}, Min: {1}, Mean: {2}'.format(
+    sigma_dif.max(), sigma_dif.min(), sigma_dif.mean()) )
+del sigma_dif
 
-#TODO: use function
+
+
 # Find arbitrage windows
 #----------------------------------------
 def openPosition(open_day, bond, stock, rate):
@@ -115,7 +127,7 @@ def openPosition(open_day, bond, stock, rate):
     T = bond[bond['Date']==open_day['Date']]['term'].iloc[0]               # 债券到期年限
     sigma_s_od = sigma_s[open_day.name]                         # 开仓日股票波动率
     d1 = ( np.log(S/K) + (r_rf + np.square(sigma_s_od)/2) * (T-open_t) ) \
-            / ( sigma_s_od * np.square(T-open_t) )
+            / ( sigma_s_od * np.sqrt(T-open_t) )
 
     # 计算delta 
     delta = np.exp(-1*r_rf * (T-open_t)) * norm.pdf(d1)
@@ -130,7 +142,8 @@ open_pos = ((sigma_s - sigma_c) >= phi1)
 # 平仓条件
 close_pos = ((sigma_s - sigma_c) <= phi2)
 # close position should be after open position
-close_pos[0:close_pos[open_pos].index[0]] = False
+if close_pos[open_pos].size:  # open position not none
+    close_pos[0:close_pos[open_pos].index[0]] = False
 
 count = 1
 while True in open_pos.unique():
@@ -151,8 +164,10 @@ while True in open_pos.unique():
 
     # update next position
     open_pos[open_day.name:close_day.name+1] = False
-    if close_pos[open_pos].size:   # still have open position
+    if close_pos[open_pos].size:
+        # still have open position, if not the loop will exit
         close_pos[close_day.name:close_pos[open_pos].index[0]] = False
+
 
     # 计算delta
     delta = openPosition(open_day, bond, stock, rate)
@@ -176,3 +191,7 @@ while True in open_pos.unique():
 
 # Output
 #----------------------------------------
+plt.plot(bond['Date'], sigma_s, bond['Date'], sigma_c,
+        bond['Date'], sigma_s-sigma_c)
+plt.legend(['Sigma_s', 'Sigma_c', 'Sigma_s - Sigma_c'])
+plt.show()
