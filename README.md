@@ -5,6 +5,6 @@
 ## Note
 - 需要将bond的原始文件中的前面三行删掉，只留下来英文的列名和数据
 原始文件如下
-![](./pic/data_bond_origin.png)
+![](./pic/data_bond_origin.PNG)
 修改之后如下
-![](./pic/data_bond_modify.png)
+![](./pic/data_bond_modify.PNG)
