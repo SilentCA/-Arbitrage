@@ -15,6 +15,15 @@
 
 使用和`splitDataBond.py`一样。
 
+在从excel导出csv的时候，需要将表中的第二行和第三行删掉，
+然后再到处csv。
+
+原始文件如下
+![](./pic/data_stock_origin.PNG)
+
+将第二行和第三行删掉之后
+![](./pic/data_stock_modify.PNG)
+
 ## Note
 
 需要将公司名字中作为文件名的非法字符去除。
