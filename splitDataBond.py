@@ -5,9 +5,9 @@ import time
 # 可转债文件
 #NOTE: 删除了源文件中的公司名称、中文列名
 #      仅包含英文列名和数据
-BOND_FILE = 'data_bond_test.csv'
+BOND_FILE = 'data_bond.csv'
 # 分离后的数据保存目录
-SPLIT_DIR = './split'
+SPLIT_DIR = './split_bond'
 
 
 start_time = time.time()

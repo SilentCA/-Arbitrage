@@ -54,22 +54,28 @@ def calArbitrage(bond_file, stock_file, rate_file, save_file, fig_file,
 
     if os.path.splitext(BOND_FILE)[1] == '.csv':
         # csv file
-        bond = pd.read_csv(BOND_FILE, converters={
-            'Date':pd.to_datetime, 'ipo_date':pd.to_datetime,
-            'carrydate':pd.to_datetime, 'maturitydate':pd.to_datetime})
+        with open(BOND_FILE) as fin:  # support for chinese file name
+            bond = pd.read_csv(fin, converters={
+                'Date':pd.to_datetime, 'ipo_date':pd.to_datetime,
+                'carrydate':pd.to_datetime, 'maturitydate':pd.to_datetime})
     else:
         # excel file
-        bond = pd.read_excel(BOND_FILE)
+        with open(BOND_FILE,'rb') as fin:
+            bond = pd.read_excel(fin)
 
     if os.path.splitext(STOCK_FILE)[1] == '.csv':
-        stock = pd.read_csv(STOCK_FILE, converters={'Date':pd.to_datetime})
+        with open(STOCK_FILE) as fin:
+            stock = pd.read_csv(fin, converters={'Date':pd.to_datetime})
     else:
-        stock = pd.read_excel(STOCK_FILE)
+        with open(STOCK_FILE,'rb') as fin:
+            stock = pd.read_excel(fin)
 
     if os.path.splitext(RATE_FILE)[1] == '.csv':
-        rate = pd.read_csv(RATE_FILE, converters={'Date':pd.to_datetime})
+        with open(RATE_FILE) as fin:
+            rate = pd.read_csv(fin, converters={'Date':pd.to_datetime})
     else:
-        rate = pd.read_excel(RATE_FILE)
+        with open(RATE_FILE,'rb') as fin:
+            rate = pd.read_excel(fin)
 
     logging.info('Load data complete.')
 

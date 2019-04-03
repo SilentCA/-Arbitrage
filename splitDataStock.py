@@ -2,9 +2,9 @@ import csv
 import os
 import time
 
-# 可转债文件
+# 股票文件
 #NOTE: 删除了源文件中的公司名称、中文列名
-#      仅包含英文列名和数据
+#      包含股票代码、英文列名和数据
 STOCK_FILE = 'data_stock.csv'
 # 分离后的数据保存目录
 SPLIT_DIR = './split_stock'
