@@ -4,6 +4,7 @@ import numpy as np
 from scipy.stats import norm
 import scipy.optimize
 import matplotlib.pyplot as plt
+import os
 import logging
 
 '''
@@ -15,16 +16,27 @@ logging.basicConfig(level=logging.INFO)
 
 def calArbitrage(bond_file, stock_file, rate_file, save_file, fig_file,
                  is_show=False):
-    ''' 计算套利 '''
+    '''计算套利
+
+    Parameters
+    ----------
+    bond_file : filepath
+        可转债文件路径
+    stock_file : filepath
+        股票文件路径
+    rate_file : filepath
+        无风险利率文件路径
+    save_file: filepath
+        套利计算结果保存文件路径
+    fig_file: filepath
+        套利计算结果图片保存文件路径
+    is_show: bool
+        True: 显示结果图片
+        False: 不显示结果图片
+    '''
 
     # Input File Setting
     #---------------------------------------
-
-    #BOND_FILE = 'bond.xlsx'
-    #STOCK_FILE = 'stock.xlsx'
-    #RATE_FILE = 'rate.xlsx'
-    #SAVE_FILE = 'result.csv'
-    #FIG_FILE = 'result.png'
 
     BOND_FILE  = bond_file 
     STOCK_FILE = stock_file
@@ -36,9 +48,29 @@ def calArbitrage(bond_file, stock_file, rate_file, save_file, fig_file,
     # Input data
     #---------------------------------------
     logging.info('Loading data...')
-    bond = pd.read_excel(BOND_FILE)
-    stock = pd.read_excel(STOCK_FILE)
-    rate = pd.read_excel(RATE_FILE)
+    logging.info('bond file: {0}'.format(BOND_FILE))
+    logging.info('stock file: {0}'.format(STOCK_FILE))
+    logging.info('rate file: {0}'.format(RATE_FILE))
+
+    if os.path.splitext(BOND_FILE)[1] == '.csv':
+        # csv file
+        bond = pd.read_csv(BOND_FILE, converters={
+            'Date':pd.to_datetime, 'ipo_date':pd.to_datetime,
+            'carrydate':pd.to_datetime, 'maturitydate':pd.to_datetime})
+    else:
+        # excel file
+        bond = pd.read_excel(BOND_FILE)
+
+    if os.path.splitext(STOCK_FILE)[1] == '.csv':
+        stock = pd.read_csv(STOCK_FILE, converters={'Date':pd.to_datetime})
+    else:
+        stock = pd.read_excel(STOCK_FILE)
+
+    if os.path.splitext(RATE_FILE)[1] == '.csv':
+        rate = pd.read_csv(RATE_FILE, converters={'Date':pd.to_datetime})
+    else:
+        rate = pd.read_excel(RATE_FILE)
+
     logging.info('Load data complete.')
 
     # Calculate Sigma_s and Sigma_c
@@ -86,7 +118,7 @@ def calArbitrage(bond_file, stock_file, rate_file, save_file, fig_file,
     inter = bond['couponrate'][0]/100        # 可转债利率
     V = 0                                    # 纯债价格
     r_rf = rate['rate'][0]                   # 无风险利率
-    for idx in range(1, 2*T+1):
+    for idx in range(1, int(2*T)+1):
         V = V + (C*inter/2) / np.power(1+r_rf/2,idx)
             
     V = V + C / np.power(1+r_rf/2,2*T)
@@ -248,15 +280,23 @@ def calArbitrage(bond_file, stock_file, rate_file, save_file, fig_file,
         plt.show()
 
 
-def test_calArbitrage():
+def test_calArbitrage_excel():
     BOND_FILE = 'bond.xlsx'
     STOCK_FILE = 'stock.xlsx'
     RATE_FILE = 'rate.xlsx'
     SAVE_FILE = 'result.csv'
     FIG_FILE = 'result.png'
+    calArbitrage(BOND_FILE,STOCK_FILE,RATE_FILE,SAVE_FILE,FIG_FILE)
 
+
+def test_calArbitrage_csv():
+    BOND_FILE = 'bond.csv'
+    STOCK_FILE = 'stock.csv'
+    RATE_FILE = 'rate.xlsx'
+    SAVE_FILE = 'result.csv'
+    FIG_FILE = 'result.png'
     calArbitrage(BOND_FILE,STOCK_FILE,RATE_FILE,SAVE_FILE,FIG_FILE)
 
 
 if __name__ == '__main__':
-    test_calArbitrage()
+    test_calArbitrage_csv()
