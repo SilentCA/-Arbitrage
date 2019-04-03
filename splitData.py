@@ -14,6 +14,12 @@ start_time = time.time()
 
 with open(BOND_FILE) as bond:
     reader = csv.reader(bond)
+    # get header, first row
+    company = reader.__next__()
+    company = list(filter(None,company))  # remove null
+    # skip second and third rows
+    reader.__next__()
+    reader.__next__()
     count = 1
     for row in reader:
         print('Processing row: {0}'.format(count))
@@ -21,7 +27,7 @@ with open(BOND_FILE) as bond:
         # 可转债数量
         Nfile = (len(row)+1) // 12
         for idx in range(Nfile):
-            save_dir = os.path.join(SPLIT_DIR,str(idx))
+            save_dir = os.path.join(SPLIT_DIR,company[idx])
             try:
                 os.mkdir(save_dir)
             except:
