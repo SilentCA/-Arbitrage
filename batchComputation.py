@@ -8,8 +8,12 @@ import arbitrage
 #-------------------------------
 # bond数据文件目录
 BOND_DIR = './split_bond_test'
+# bond数据文件名
+BOND_BASENAME = 'bond.csv'
 # stock数据文件目录
 STOCK_DIR = './split_stock_test'
+# stock数据文件名
+STOCK_BASENAME = 'stock.csv'
 # 无风险利率文件
 RATE_FILE = './rate.xlsx'
 # 保存结果文件名
@@ -28,10 +32,10 @@ for idx, bond_path in enumerate(bond_paths):
     logging.info('Computing No.{0}, bond: {1}'.format(idx,bond_path))
 
     # 找到bond对应的stock
-    bond_file = os.path.join(BOND_DIR,bond_path,'bond.csv')
+    bond_file = os.path.join(BOND_DIR,bond_path,BOND_BASENAME)
     with open(bond_file) as fin:
         stock_path = pd.read_csv(fin)['underlyingcode'][0]
-    stock_file = os.path.join(STOCK_DIR,stock_path,'stock.csv')
+    stock_file = os.path.join(STOCK_DIR,stock_path,BOND_BASENAME)
     rate_file = RATE_FILE
     save_file = os.path.join(BOND_DIR,bond_path,SAVE_FILENAME)
     fig_file = os.path.join(BOND_DIR,bond_path,FIG_FILENAME)
