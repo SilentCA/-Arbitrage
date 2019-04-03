@@ -36,6 +36,9 @@ Nd = bond.shape[0]
 # 交易天数N 
 N = (stock['Date'][len(stock)-1] - stock['Date'][0]).days
 
+logging.info('可转债交易天数Nd: {0}'.format(Nd))
+logging.info('stock交易的日历天数N: {0}'.format(N))
+
 # 股票日收益率r
 r = pd.Series(np.nan, index=range(Nd))  # init
 close_stock = stock['close_stock']
@@ -47,6 +50,8 @@ for idx in range(Nd):
 # 计算股票的平均收益率r_mean
 #NOTE: nan will be excluded in  mean()
 r_mean = r.mean()
+
+logging.info('股票平均收益率r_mean: {0}'.format(r_mean))
 
 # 计算股票日波动率sigma_s
 lambd = 0.94                       # 衰减因子
@@ -64,11 +69,18 @@ T = bond['term'][0]
 
 # 纯债价格V
 C = 100                                  # 可转债面值
-inter = bond['couponrate'][0] / 100      # 可转债利率
+inter = bond['couponrate'][0]/100        # 可转债利率
 V = 0                                    # 纯债价格
+r_rf = rate['rate'][0]                   # 无风险利率
 for idx in range(1, 2*T+1):
-    V = V + (C*inter/2) / np.power(1+inter/2,idx) + \
-        C / np.power(1+inter/2,2*T)
+    V = V + (C*inter/2) / np.power(1+r_rf/2,idx)
+        
+V = V + C / np.power(1+r_rf/2,2*T)
+
+logging.info('可转债面值C: {0}'.format(C))
+logging.info('可转债年利率i: {0}'.format(inter))
+logging.info('到期年限T: {0}'.format(T))
+logging.info('纯债价格V: {0}'.format(V))
 
 # 期权价格
 opt_price = pd.Series(np.nan, index=range(Nd))                # 期权价格
@@ -104,9 +116,9 @@ for idx in range(Nd):
         T = bond[bond['Date']==bond['Date'][idx]]['term'].iloc[0]               
         # 当天时间
         t_now = ((bond['Date'][idx] - bond['carrydate'][idx]).days + 1) / 365
-        sigma_c[idx] = scipy.optimize.fsolve(optionPriceFunc, 0.3, 
+        sigma_c[idx] = scipy.optimize.fsolve(optionPriceFunc, 0.4, 
                             args=(opt_price[idx],S,K,r_rf,T,t_now),
-                            maxfev=1000000,xtol=1e-12)
+                            maxfev=100000000,xtol=1e-19)
 
 
 sigma_dif = sigma_s - sigma_c
@@ -181,13 +193,13 @@ while True in open_pos.unique():
         # still have open position, if not the loop will exit
         close_pos[close_day.name:close_pos[open_pos].index[0]] = False
 
-
-    # 计算delta
-    delta = openPosition(open_day, bond, stock, rate)
-
     # 套利持续天数t_alpha
     t_alpha = (close_day['Date'] - open_day['Date']).days + 1
     logging.info('Arbitrage window size: {0}'.format(t_alpha))
+
+    # 计算delta
+    delta = openPosition(open_day, bond, stock, rate)
+    logging.info('delta: {0}'.format(delta))
 
     # 套期收益R
     CB_T = close_day['close']  # 可转债平仓日价格
