@@ -84,7 +84,7 @@ def optionPriceFunc(sigma_c, opt_price, S, K, r_rf, T, t_now):
     d1 = ( np.log(S/K) + (r_rf + np.square(sigma_c)/2) * (T-t_now) ) \
             / ( sigma_c * np.sqrt(T-t_now) )
     d2 = d1 - sigma_c * np.sqrt(T-t_now)
-    return S*norm.pdf(d1) - K*np.exp(-1*r_rf*(T-t_now))*norm.pdf(d2)\
+    return S*norm.cdf(d1) - K*np.exp(-1*r_rf*(T-t_now))*norm.cdf(d2)\
             - opt_price
 
 
@@ -104,7 +104,7 @@ for idx in range(Nd):
         T = bond[bond['Date']==bond['Date'][idx]]['term'].iloc[0]               
         # 当天时间
         t_now = ((bond['Date'][idx] - bond['carrydate'][idx]).days + 1) / 365
-        sigma_c[idx] = scipy.optimize.fsolve(optionPriceFunc, 0.2, 
+        sigma_c[idx] = scipy.optimize.fsolve(optionPriceFunc, 0.3, 
                             args=(opt_price[idx],S,K,r_rf,T,t_now),
                             maxfev=1000000,xtol=1e-12)
 
@@ -141,7 +141,7 @@ def openPosition(open_day, bond, stock, rate):
             / ( sigma_s_od * np.sqrt(T-open_t) )
 
     # 计算delta 
-    delta = np.exp(-1*r_rf * (T-open_t)) * norm.pdf(d1)
+    delta = np.exp(-1*r_rf * (T-open_t)) * norm.cdf(d1)
     return delta
 
 
