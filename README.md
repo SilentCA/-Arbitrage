@@ -24,6 +24,10 @@
 将第二行和第三行删掉之后
 ![](./pic/data_stock_modify.PNG)
 
+# 批量套利计算batchComputation.py
+
+# 批量过滤bond数据中的空白数据batchFilter.py
+
 ## Note
 
 需要将公司名字中作为文件名的非法字符去除。
