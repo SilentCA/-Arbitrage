@@ -274,7 +274,7 @@ def calArbitrage(bond_file, stock_file, rate_file, save_file, fig_file,
     # Output
     #----------------------------------------
     # output result in to file
-    result.to_csv(SAVE_FILE)
+    result.to_csv(SAVE_FILE, index=False)
     # plot result
     plt.plot(bond['Date'], sigma_s, bond['Date'], sigma_c,
             bond['Date'], sigma_s-sigma_c)
