@@ -11,7 +11,7 @@ logging.basicConfig(level=logging.INFO)
 # Path Setting
 #-------------------------------
 # bond数据文件目录
-BOND_DIR = './split_bond'
+BOND_DIR = './data/Bond_filter/Bond_filter'
 
 
 # BOND_DIR中的所有bond
@@ -23,10 +23,10 @@ for idx, bond_path in enumerate(bond_paths):
 
     logging.info('Filtering No.{0}, bond: {1}'.format(idx,bond_path))
 
-    bond_file = os.path.join(BOND_DIR,bond_path,'bond.csv')
+    bond_file = os.path.join(BOND_DIR,bond_path,'bond_filter.csv')
     with open(bond_file) as fin:
         reader = csv.DictReader(fin)
-        bond_file_new = os.path.join(BOND_DIR,bond_path,'bond_new.csv')
+        bond_file_new = os.path.join(BOND_DIR,bond_path,'bond_filter_1.csv')
         with open(bond_file_new, 'a') as fout: 
             writer = csv.DictWriter(fout, reader.fieldnames)
             writer.writeheader()

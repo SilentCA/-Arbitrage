@@ -1,0 +1,67 @@
+computing no.58, bond: 唐钢转债(退市)
+D:\Jingbo\Others\zsq\arbitrage.py:153: RuntimeWarning: invalid value encountered in sqrt
+  / ( sigma_c * np.sqrt(T-t_now) )
+D:\Jingbo\Others\zsq\arbitrage.py:154: RuntimeWarning: invalid value encountered in sqrt
+  d2 = d1 - sigma_c * np.sqrt(T-t_now)
+d:\ProgramData\Anaconda3\lib\site-packages\scipy\stats\_distn_infrastructure.py:879: RuntimeWarning: invalid value encountered in greater
+  return (self.a < x) & (x < self.b)
+d:\ProgramData\Anaconda3\lib\site-packages\scipy\stats\_distn_infrastructure.py:879: RuntimeWarning: invalid value encountered in less
+  return (self.a < x) & (x < self.b)
+d:\ProgramData\Anaconda3\lib\site-packages\scipy\stats\_distn_infrastructure.py:1738: RuntimeWarning: invalid value encountered in greater_equal
+  cond2 = (x >= self.b) & cond0
+D:\Jingbo\Others\zsq\arbitrage.py:209: RuntimeWarning: invalid value encountered in sqrt
+  / ( sigma_s_od * np.sqrt(T-open_t) )
+
+computing no.62, bond: 国电转债(退市)
+d:\ProgramData\Anaconda3\lib\site-packages\scipy\optimize\minpack.py:163: RuntimeWarning: The iteration is not making good progress, as measured by the
+  improvement from the last ten iterations.
+  warnings.warn(msg, RuntimeWarning)
+d:\ProgramData\Anaconda3\lib\site-packages\scipy\optimize\minpack.py:163: RuntimeWarning: xtol=0.000000 is too small, no further improvement in the approximate
+  solution is possible.
+  warnings.warn(msg, RuntimeWarning)
+D:\Jingbo\Others\zsq\arbitrage.py:153: RuntimeWarning: divide by zero encountered in true_divide
+  / ( sigma_c * np.sqrt(T-t_now) )
+D:\Jingbo\Others\zsq\arbitrage.py:153: RuntimeWarning: invalid value encountered in sqrt
+  / ( sigma_c * np.sqrt(T-t_now) )
+D:\Jingbo\Others\zsq\arbitrage.py:154: RuntimeWarning: invalid value encountered in sqrt
+  d2 = d1 - sigma_c * np.sqrt(T-t_now)
+d:\ProgramData\Anaconda3\lib\site-packages\scipy\stats\_distn_infrastructure.py:879: RuntimeWarning: invalid value encountered in greater
+  return (self.a < x) & (x < self.b)
+d:\ProgramData\Anaconda3\lib\site-packages\scipy\stats\_distn_infrastructure.py:879: RuntimeWarning: invalid value encountered in less
+  return (self.a < x) & (x < self.b)
+d:\ProgramData\Anaconda3\lib\site-packages\scipy\stats\_distn_infrastructure.py:1738: RuntimeWarning: invalid value encountered in greater_equal
+  cond2 = (x >= self.b) & cond0
+D:\Jingbo\Others\zsq\arbitrage.py:209: RuntimeWarning: divide by zero encountered in double_scalars
+  / ( sigma_s_od * np.sqrt(T-open_t) )
+D:\Jingbo\Others\zsq\arbitrage.py:209: RuntimeWarning: invalid value encountered in sqrt
+  / ( sigma_s_od * np.sqrt(T-open_t) )
+
+computing no.120, bond: 桂冠转债(退市)
+D:\Jingbo\Others\zsq\arbitrage.py:153: RuntimeWarning: invalid value encountered in sqrt
+  / ( sigma_c * np.sqrt(T-t_now) )
+D:\Jingbo\Others\zsq\arbitrage.py:154: RuntimeWarning: invalid value encountered in sqrt
+  d2 = d1 - sigma_c * np.sqrt(T-t_now)
+d:\ProgramData\Anaconda3\lib\site-packages\scipy\stats\_distn_infrastructure.py:879: RuntimeWarning: invalid value encountered in greater
+  return (self.a < x) & (x < self.b)
+d:\ProgramData\Anaconda3\lib\site-packages\scipy\stats\_distn_infrastructure.py:879: RuntimeWarning: invalid value encountered in less
+  return (self.a < x) & (x < self.b)
+d:\ProgramData\Anaconda3\lib\site-packages\scipy\stats\_distn_infrastructure.py:1738: RuntimeWarning: invalid value encountered in greater_equal
+  cond2 = (x >= self.b) & cond0
+D:\Jingbo\Others\zsq\arbitrage.py:209: RuntimeWarning: invalid value encountered in sqrt
+  / ( sigma_s_od * np.sqrt(T-open_t) )
+
+computing no.196, bond: 雅戈转债(退市)
+D:\Jingbo\Others\zsq\arbitrage.py:153: RuntimeWarning: invalid value encountered in sqrt
+  / ( sigma_c * np.sqrt(T-t_now) )
+D:\Jingbo\Others\zsq\arbitrage.py:154: RuntimeWarning: invalid value encountered in sqrt
+  d2 = d1 - sigma_c * np.sqrt(T-t_now)
+d:\ProgramData\Anaconda3\lib\site-packages\scipy\stats\_distn_infrastructure.py:879: RuntimeWarning: invalid value encountered in greater
+  return (self.a < x) & (x < self.b)
+d:\ProgramData\Anaconda3\lib\site-packages\scipy\stats\_distn_infrastructure.py:879: RuntimeWarning: invalid value encountered in less
+  return (self.a < x) & (x < self.b)
+d:\ProgramData\Anaconda3\lib\site-packages\scipy\stats\_distn_infrastructure.py:1738: RuntimeWarning: invalid value encountered in greater_equal
+  cond2 = (x >= self.b) & cond0
+D:\Jingbo\Others\zsq\arbitrage.py:209: RuntimeWarning: invalid value encountered in sqrt
+  / ( sigma_s_od * np.sqrt(T-open_t) )
+
+

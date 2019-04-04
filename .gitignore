@@ -5,3 +5,6 @@ docs/
 *.xlsx
 *.csv
 result.png
+.project
+.pydevproject
+.setting./

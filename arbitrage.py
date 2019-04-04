@@ -12,7 +12,7 @@ Question:
 '''
 
 # logging setting
-logging.basicConfig(level=logging.INFO)
+# logging.basicConfig(level=logging.INFO)
 
 def calArbitrage(bond_file, stock_file, rate_file, save_file, fig_file,
                  is_show=False):
@@ -86,18 +86,22 @@ def calArbitrage(bond_file, stock_file, rate_file, save_file, fig_file,
     # 可转债数据天数Nd
     Nd = bond.shape[0]
     # 交易天数N 
-    N = (stock['Date'][len(stock)-1] - stock['Date'][0]).days
+    N = (bond['Date'][len(bond)-1] - bond['Date'][0]).days
 
     logging.info('可转债交易天数Nd: {0}'.format(Nd))
     logging.info('stock交易的日历天数N: {0}'.format(N))
 
     # 股票日收益率r
     r = pd.Series(np.nan, index=range(Nd))  # init
-    close_stock = stock['close_stock']
+    close_stock = stock.loc[:,['Date', 'close_stock']]
     #TODO: using iterators
     for idx in range(Nd):
         if idx:  # skip first day
-            r[idx] = close_stock[idx] / close_stock[idx-1] - 1
+            tmp1 = close_stock[close_stock['Date']==bond['Date'][idx]
+                               ]['close_stock'].iloc[0]
+            tmp2 = close_stock[close_stock['Date']==bond['Date'][idx-1]
+                               ]['close_stock'].iloc[0]
+            r[idx] = tmp1 / tmp2 - 1
 
     # 计算股票的平均收益率r_mean
     #NOTE: nan will be excluded in  mean()
@@ -111,10 +115,10 @@ def calArbitrage(bond_file, stock_file, rate_file, save_file, fig_file,
     sigma_s = pd.Series(np.nan, index=range(Nd))
     #TODO: using iterators
     for idx in range(M, Nd):       # skip first M days
-        sum = 0
+        suma = 0
         for day in range(1, M+1):
-            sum = sum + np.power(lambd,day-1) * np.square(r[idx+1-day] - r_mean)
-        sigma_s[idx] = np.sqrt(N * (1-lambd) * sum)
+            suma = suma + np.power(lambd,day-1) * np.square(r[idx+1-day] - r_mean)
+        sigma_s[idx] = np.sqrt(N * (1-lambd) * suma)
 
     # 可转债的到期年限T
     T = bond['term'][0]
@@ -276,6 +280,7 @@ def calArbitrage(bond_file, stock_file, rate_file, save_file, fig_file,
     # output result in to file
     result.to_csv(SAVE_FILE, index=False)
     # plot result
+    plt.clf()
     plt.plot(bond['Date'], sigma_s, bond['Date'], sigma_c,
             bond['Date'], sigma_s-sigma_c)
     plt.legend(['Sigma_s', 'Sigma_c', 'Sigma_s - Sigma_c'])
@@ -302,7 +307,16 @@ def test_calArbitrage_csv():
     SAVE_FILE = 'result.csv'
     FIG_FILE = 'result.png'
     calArbitrage(BOND_FILE,STOCK_FILE,RATE_FILE,SAVE_FILE,FIG_FILE)
+    
+def test_1():
+    BOND_FILE = './data/Bond_filter/Bond_filter/民生转债(退市)/bond_filter_1.csv'
+    STOCK_FILE = './split_stock/600016.SH/stock.csv'
+    RATE_FILE = 'rate.xlsx'
+    SAVE_FILE = 'result.csv'
+    FIG_FILE = 'result.png'
+    calArbitrage(BOND_FILE,STOCK_FILE,RATE_FILE,SAVE_FILE,FIG_FILE,True)
+
 
 
 if __name__ == '__main__':
-    test_calArbitrage_csv()
+    test_1()
