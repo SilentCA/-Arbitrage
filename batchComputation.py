@@ -11,7 +11,7 @@ logging.basicConfig(level=logging.INFO,
 # Path Setting
 #-------------------------------
 # bond数据文件目录
-BOND_DIR = './data/Bond_filter/Bond_filter'
+BOND_DIR = './data/归档'
 # bond数据文件名
 BOND_BASENAME = 'bond_filter_1.csv'
 # stock数据文件目录
@@ -24,6 +24,8 @@ RATE_FILE = './rate.xlsx'
 SAVE_FILENAME = 'result.csv'
 # 结果图片文件名
 FIG_FILENAME = 'result.png'
+# 统计数据文件名
+STAT_FILENAME = 'statistics.csv'
 
 
 # BOND_DIR中的所有bond
@@ -35,7 +37,7 @@ bond_paths.sort()
 fail_list = []
 for idx, bond_path in enumerate(bond_paths):
     idx = idx + 1
-    if idx <= 146:
+    if idx <= 0:
         continue
 
     logging.info('computing no.{0}, bond: {1}'.format(idx,bond_path))
@@ -49,6 +51,8 @@ for idx, bond_path in enumerate(bond_paths):
     rate_file = RATE_FILE
     save_file = os.path.join(BOND_DIR,bond_path,SAVE_FILENAME)
     fig_file = os.path.join(BOND_DIR,bond_path,FIG_FILENAME)
+    if STAT_FILENAME:
+        stat_file = os.path.join(BOND_DIR,bond_path,STAT_FILENAME)
 
     logging.info('stock file: {0}'.format(stock_file))
     logging.info('rate file: {0}'.format(rate_file))
@@ -58,7 +62,7 @@ for idx, bond_path in enumerate(bond_paths):
     # 计算套利
     try:
         arbitrage.calArbitrage(bond_file,stock_file,rate_file,
-                    save_file,fig_file)
+                    save_file,fig_file,stat_file)
     except:
         logging.info('Computing failure: {0}\n{1}'.format(bond_path,e))
         fail_list.append(bond_path)

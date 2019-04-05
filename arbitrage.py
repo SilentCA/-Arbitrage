@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 import os
 import logging
 
+import statistics
+
 '''
 Question:
 '''
@@ -14,8 +16,30 @@ Question:
 # logging setting
 # logging.basicConfig(level=logging.INFO)
 
+
+def openPosition(open_day, bond, stock, rate, sigma_s):
+    ''' 计算开仓数据 '''
+    # 开仓时间
+    open_t = ((open_day['Date'] - open_day['carrydate']).days + 1) / 365
+
+    # 计算d1
+    S = stock[ stock['Date'] == open_day['Date'] ]['close_stock'].iloc[0]  # 开仓当天股票价格
+    K = open_day['clause_conversion2_swapshareprice']              # 开仓当天转换价格
+    r_rf = rate[rate['Date'] == open_day['Date']]['rate'].iloc[0]          # 无风险利率
+    T = bond[bond['Date']==open_day['Date']]['term'].iloc[0]               # 债券到期年限
+    sigma_s_od = sigma_s[open_day.name]                         # 开仓日股票波动率
+
+    d1 = ( np.log(S/K) + (r_rf + np.square(sigma_s_od)/2) * (T-open_t) ) \
+            / ( sigma_s_od * np.sqrt(T-open_t) )
+
+    # 计算delta 
+    delta = np.exp(-1*r_rf * (T-open_t)) * norm.cdf(d1)
+    return delta
+
+
+
 def calArbitrage(bond_file, stock_file, rate_file, save_file, fig_file,
-                 is_show=False):
+                 stat_file=None, is_show=False):
     '''计算套利
 
     Parameters
@@ -193,26 +217,6 @@ def calArbitrage(bond_file, stock_file, rate_file, save_file, fig_file,
 
     # Find arbitrage windows
     #----------------------------------------
-    def openPosition(open_day, bond, stock, rate):
-        ''' 计算开仓数据 '''
-        # 开仓时间
-        open_t = ((open_day['Date'] - open_day['carrydate']).days + 1) / 365
-
-        # 计算d1
-        S = stock[ stock['Date'] == open_day['Date'] ]['close_stock'].iloc[0]  # 开仓当天股票价格
-        K = open_day['clause_conversion2_swapshareprice']              # 开仓当天转换价格
-        r_rf = rate[rate['Date'] == open_day['Date']]['rate'].iloc[0]          # 无风险利率
-        T = bond[bond['Date']==open_day['Date']]['term'].iloc[0]               # 债券到期年限
-        sigma_s_od = sigma_s[open_day.name]                         # 开仓日股票波动率
-
-        d1 = ( np.log(S/K) + (r_rf + np.square(sigma_s_od)/2) * (T-open_t) ) \
-                / ( sigma_s_od * np.sqrt(T-open_t) )
-
-        # 计算delta 
-        delta = np.exp(-1*r_rf * (T-open_t)) * norm.cdf(d1)
-        return delta
-
-
     logging.info('Finding arbitrage windows...')
     phi1 = 0.2
     phi2 = 0
@@ -226,9 +230,12 @@ def calArbitrage(bond_file, stock_file, rate_file, save_file, fig_file,
 
     # arbitrage result
     result = pd.DataFrame(columns=['open','close','days','profit'])
-    count = 1
+    count = 0
+    delta_sum = 0
     while True in open_pos.unique():
         ''' loop until no more open position left '''
+
+        count = count + 1
 
         # 开仓当天数据
         open_day = bond[open_pos].iloc[0]
@@ -239,7 +246,6 @@ def calArbitrage(bond_file, stock_file, rate_file, save_file, fig_file,
         else: 
             close_day = bond[close_pos].iloc[0]
         logging.info('----------No.{0} arbitrage window----------'.format(count))
-        count = count + 1
         logging.info('Open day: {0}'.format(open_day['Date']))
         logging.info('Close day: {0}'.format(close_day['Date']))
 
@@ -254,7 +260,8 @@ def calArbitrage(bond_file, stock_file, rate_file, save_file, fig_file,
         logging.info('Arbitrage window size: {0}'.format(t_alpha))
 
         # 计算delta
-        delta = openPosition(open_day, bond, stock, rate)
+        delta = openPosition(open_day, bond, stock, rate, sigma_s)
+        delta_sum = delta_sum + delta
         logging.info('delta: {0}'.format(delta))
 
         # 套期收益R
@@ -269,16 +276,27 @@ def calArbitrage(bond_file, stock_file, rate_file, save_file, fig_file,
 
         # store result
         res_dict = {'open':open_day['Date'], 'close':close_day['Date'],
-                       'days':t_alpha, 'profit':R}
+                    'days':t_alpha, 'profit':R, 'delta':delta}
         result = result.append(res_dict, ignore_index=True)
-
-
+    
+    delta_mean = delta_sum / count
+    logging.info('Mean of delta: {0}'.format(delta_mean))
 
 
     # Output
     #----------------------------------------
     # output result in to file
     result.to_csv(SAVE_FILE, index=False)
+
+    arbi = statistics.loadResult(SAVE_FILE)
+    # 年化收益率，年化波动率，夏普比率
+    ar, asigma_g, sharpe = statistics.calStatistics(bond,rate,arbi)
+    if stat_file:
+        stat = pd.DataFrame(columns=['delta_mean','ar', 'asigma_g', 'sharpe'])
+        stat = stat.append({'delta_mean':delta_mean,'ar':ar,
+                            'asigma_g':asigma_g, 'sharpe':sharpe},
+                          ignore_index=True)
+        stat.to_csv(stat_file, index=False)
     # plot result
     plt.clf()
     plt.plot(bond['Date'], sigma_s, bond['Date'], sigma_c,
@@ -309,12 +327,13 @@ def test_calArbitrage_csv():
     calArbitrage(BOND_FILE,STOCK_FILE,RATE_FILE,SAVE_FILE,FIG_FILE)
     
 def test_1():
-    BOND_FILE = './data/Bond_filter/Bond_filter/民生转债(退市)/bond_filter_1.csv'
-    STOCK_FILE = './split_stock/600016.SH/stock.csv'
+    BOND_FILE = './data/归档/国电转债(退市)/bond_filter_1.csv'
+    STOCK_FILE = './split_stock/600795.SH/stock.csv'
     RATE_FILE = 'rate.xlsx'
     SAVE_FILE = 'result.csv'
     FIG_FILE = 'result.png'
-    calArbitrage(BOND_FILE,STOCK_FILE,RATE_FILE,SAVE_FILE,FIG_FILE,True)
+    STAT_FILE = 'statistics.csv'
+    calArbitrage(BOND_FILE,STOCK_FILE,RATE_FILE,SAVE_FILE,FIG_FILE,STAT_FILE,is_show=False)
 
 
 

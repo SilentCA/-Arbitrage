@@ -11,7 +11,7 @@ logging.basicConfig(level=logging.INFO)
 # Path Setting
 #-------------------------------
 # bond数据文件目录
-BOND_DIR = './data/Bond_filter/Bond_filter'
+BOND_DIR = './data/归档'
 
 
 # BOND_DIR中的所有bond
