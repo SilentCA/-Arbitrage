@@ -11,7 +11,7 @@ logging.basicConfig(level=logging.INFO,
 # Path Setting
 #-------------------------------
 # bond数据文件目录
-BOND_DIR = './data/归档'
+BOND_DIR = './data/Index'
 # bond数据文件名
 BOND_BASENAME = 'bond_filter_1.csv'
 # stock数据文件目录
@@ -26,6 +26,8 @@ SAVE_FILENAME = 'result.csv'
 FIG_FILENAME = 'result.png'
 # 统计数据文件名
 STAT_FILENAME = 'statistics.csv'
+# 总的统计数据文件名
+TOTAL_STAT_FILENAME = 'total_statistics.csv'
 
 
 # BOND_DIR中的所有bond
@@ -34,6 +36,7 @@ bond_paths.sort()
 
 
 # 计算所有的可转债
+stat = pd.DataFrame(columns=['bond','delta_mean','ar', 'asigma_g', 'sharpe'])
 fail_list = []
 for idx, bond_path in enumerate(bond_paths):
     idx = idx + 1
@@ -57,15 +60,22 @@ for idx, bond_path in enumerate(bond_paths):
     logging.info('stock file: {0}'.format(stock_file))
     logging.info('rate file: {0}'.format(rate_file))
 
-    arbitrage.calArbitrage(bond_file,stock_file,rate_file,
-                save_file,fig_file)
+    # stat_data = arbitrage.calArbitrage(bond_file,stock_file,rate_file,
+    #             save_file,fig_file)
     # 计算套利
+    stat_data = None
     try:
-        arbitrage.calArbitrage(bond_file,stock_file,rate_file,
+        stat_data = arbitrage.calArbitrage(bond_file,stock_file,rate_file,
                     save_file,fig_file,stat_file)
     except:
         logging.info('Computing failure: {0}\n{1}'.format(bond_path,e))
         fail_list.append(bond_path)
+
+    stat_data['bond'] = bond_path
+    stat = stat.append(stat_data, ignore_index=True)
+
+    
+stat.to_csv(os.path.join(BOND_DIR,TOTAL_STAT_FILENAME),index=False)
 
 logging.info('Failure when computing:')
 logging.info('\n'.join(fail_list))

@@ -103,6 +103,9 @@ def calArbitrage(bond_file, stock_file, rate_file, save_file, fig_file,
 
     logging.info('Load data complete.')
 
+    # Set valid date time
+    # bond = bond[bond['Date']>pd.to_datetime('2018/03/01')].reset_index()
+
     # Calculate Sigma_s and Sigma_c
     #---------------------------------------
     logging.info('Calculate sigma_s and sigma_c.')
@@ -279,7 +282,10 @@ def calArbitrage(bond_file, stock_file, rate_file, save_file, fig_file,
                     'days':t_alpha, 'profit':R, 'delta':delta}
         result = result.append(res_dict, ignore_index=True)
     
-    delta_mean = delta_sum / count
+    if count:
+        delta_mean = delta_sum / count
+    else:
+        delta_mean = np.nan
     logging.info('Mean of delta: {0}'.format(delta_mean))
 
 
@@ -290,12 +296,13 @@ def calArbitrage(bond_file, stock_file, rate_file, save_file, fig_file,
 
     arbi = statistics.loadResult(SAVE_FILE)
     # 年化收益率，年化波动率，夏普比率
-    ar, asigma_g, sharpe = statistics.calStatistics(bond,rate,arbi)
+    ar, asigma_g, sharpe, max_drawdown = statistics.calStatistics(bond,rate,arbi)
+    stat_data = {'delta_mean':delta_mean,'ar':ar, 'asigma_g':asigma_g,
+                 'sharpe':sharpe, 'max_drawdown':max_drawdown}
     if stat_file:
-        stat = pd.DataFrame(columns=['delta_mean','ar', 'asigma_g', 'sharpe'])
-        stat = stat.append({'delta_mean':delta_mean,'ar':ar,
-                            'asigma_g':asigma_g, 'sharpe':sharpe},
-                          ignore_index=True)
+        stat = pd.DataFrame(columns=['delta_mean','ar', 'asigma_g',
+                                     'sharpe','max_drawdown'])
+        stat = stat.append(stat_data, ignore_index=True)
         stat.to_csv(stat_file, index=False)
     # plot result
     plt.clf()
@@ -307,6 +314,8 @@ def calArbitrage(bond_file, stock_file, rate_file, save_file, fig_file,
     # show the plot
     if is_show:
         plt.show()
+
+    return stat_data
 
 
 def test_calArbitrage_excel():
@@ -327,12 +336,12 @@ def test_calArbitrage_csv():
     calArbitrage(BOND_FILE,STOCK_FILE,RATE_FILE,SAVE_FILE,FIG_FILE)
     
 def test_1():
-    BOND_FILE = './data/归档/国电转债(退市)/bond_filter_1.csv'
-    STOCK_FILE = './split_stock/600795.SH/stock.csv'
+    BOND_FILE = './test/statistics/民生/bond.xlsx'
+    STOCK_FILE = './split_stock/600016.SH/stock.csv'
     RATE_FILE = 'rate.xlsx'
-    SAVE_FILE = 'result.csv'
-    FIG_FILE = 'result.png'
-    STAT_FILE = 'statistics.csv'
+    SAVE_FILE = './test/statistics/民生/result.csv'
+    FIG_FILE = './test/statistics/民生/result.png'
+    STAT_FILE = './test/statistics/民生/statistics.csv'
     calArbitrage(BOND_FILE,STOCK_FILE,RATE_FILE,SAVE_FILE,FIG_FILE,STAT_FILE,is_show=False)
 
 

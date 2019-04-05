@@ -1,12 +1,13 @@
 #encoding=utf-8
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 import os
 import logging
 
 
 # logging setting
-logging.basicConfig(level=logging.INFO)
+# logging.basicConfig(level=logging.INFO)
 
 
 def loadData(bond_file, rate_file):
@@ -47,8 +48,17 @@ def loadResult(filename):
     return arbi
 
 
-def calStatistics(bond, rate, arbi):
-    # 转债净值NV
+def maxDrawdown(return_list):
+    '''最大回撤率'''
+    i = np.argmax((np.maximum.accumulate(return_list) - return_list) / np.maximum.accumulate(return_list))  # 结束位置
+    if i == 0:
+        return 0, 0, 0
+    j = np.argmax(return_list[:i])  # 开始位置
+    return (return_list[j] - return_list[i]) / (return_list[j]), j, i
+
+
+def calStatistics(bond, rate, arbi, isPlot=False):
+    # 可转债净值NV
     #---------------------------------------
     # NV = bond.loc[:, ['Date', 'close']].copy()
     NV = pd.DataFrame(bond.loc[:, ['Date', 'close']])
@@ -57,13 +67,18 @@ def calStatistics(bond, rate, arbi):
                         NV[ NV['Date']>=arbi['open'][idx] ]['close'] +\
                         arbi['profit'][idx]
 
-    # 转债净增长率
+    if isPlot:
+        plt.clf()
+        plt.plot(NV['close'])
+        plt.show()
+
+    # 可转债净增长率
     g = pd.Series(np.nan, index=range(len(NV)))
     for idx in range(len(NV)):
         if idx:  # skip first day
             g[idx] = NV['close'][idx] / NV['close'][idx-1] - 1
 
-    # 转债净值日增长率均值
+    # 可转债净值日增长率均值
     g_mean = g.mean()
     logging.info('净值增长率均值：{0}'.format(g_mean))
 
@@ -71,13 +86,13 @@ def calStatistics(bond, rate, arbi):
     sigma_g = g.std()  # default normalized by N-1
     logging.info('净值增长率波动率：{0}'.format(sigma_g))
 
-    # 转债年化收益率
-    # skip first day: g(1:)
-    ar = np.power(np.prod(g[1:]+1), (len(g)-1)/365)
+    # 可转债年化收益率
+    # skip first day: g[1:]
+    ar = np.power(np.prod(g[1:]+1), 252/(len(g)-1)) - 1
     logging.info('年化收益率：{0}'.format(ar))
 
-    # 转债年化波动率
-    asigma_g = np.sqrt(365) * sigma_g
+    # 可转债年化波动率
+    asigma_g = np.sqrt(252) * sigma_g
     logging.info('年化波动率：{0}'.format(asigma_g))
 
     # 无风险收益率均值
@@ -88,23 +103,29 @@ def calStatistics(bond, rate, arbi):
     logging.info('无风险收益率均值：{0}'.format(r_rf_mean))
 
     # 夏普比率
-    sharpe = (g_mean - r_rf_mean) / sigma_g
+    # sharpe = ( g_mean - (np.power(1+r_rf_mean,1/365) - 1) ) / sigma_g
+    sharpe = (ar-r_rf_mean) / asigma_g
     logging.info('夏普比率：{0}'.format(sharpe))
 
-    return ar, asigma_g, sharpe
+    # 最大回撤率
+    max_drawdown, mdd_start, mdd_end = maxDrawdown(NV['close'])
+    logging.info('最大回撤率: {0}，start: {1}, end: {2}'.format(
+                    max_drawdown, mdd_start, mdd_end))
+
+    return ar, asigma_g, sharpe, max_drawdown
 
 def test_statistics():
     # Input File Setting
     #---------------------------------------
-    BOND_FILE  = './test/statistics/bond.csv'
+    BOND_FILE  = './test/statistics/民生/bond.xlsx'
     RATE_FILE  = 'rate.xlsx'
-    ARBITRAGE_RESULT_FILE = './test/statistics/result.csv'
+    ARBITRAGE_RESULT_FILE = './test/statistics/民生/result.csv'
 
     (bond, rate) = loadData(BOND_FILE, RATE_FILE)
     arbi = loadResult(ARBITRAGE_RESULT_FILE)
     logging.info('Load data complete.')
     
-    ar, asigma_g, sharpe = calStatistics(bond,rate,arbi)
+    ar, asigma_g, sharpe, max_drawdown = calStatistics(bond,rate,arbi,isPlot=True)
 
 
 if __name__ == "__main__":
