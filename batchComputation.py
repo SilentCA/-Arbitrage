@@ -8,6 +8,9 @@ logging.basicConfig(level=logging.INFO,
                    filename='arbitrage.log',
                    filemode='a')
 
+# skip first number
+SKIP_NUM = 0
+
 # Path Setting
 #-------------------------------
 # bond数据文件目录
@@ -40,7 +43,7 @@ stat = pd.DataFrame(columns=['bond','delta_mean','ar', 'asigma_g', 'sharpe'])
 fail_list = []
 for idx, bond_path in enumerate(bond_paths):
     idx = idx + 1
-    if idx <= 0:
+    if idx <= SKIP_NUM:
         continue
 
     logging.info('computing no.{0}, bond: {1}'.format(idx,bond_path))
@@ -60,15 +63,13 @@ for idx, bond_path in enumerate(bond_paths):
     logging.info('stock file: {0}'.format(stock_file))
     logging.info('rate file: {0}'.format(rate_file))
 
-    # stat_data = arbitrage.calArbitrage(bond_file,stock_file,rate_file,
-    #             save_file,fig_file)
     # 计算套利
     stat_data = None
     try:
         stat_data = arbitrage.calArbitrage(bond_file,stock_file,rate_file,
                     save_file,fig_file,stat_file)
     except:
-        logging.info('Computing failure: {0}\n{1}'.format(bond_path,e))
+        logging.info('Computing failure: {0}'.format(bond_path))
         fail_list.append(bond_path)
 
     stat_data['bond'] = bond_path

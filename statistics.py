@@ -1,4 +1,6 @@
-#encoding=utf-8
+# -*- coding=utf-8 -*-
+'''Calulate statistic for arbitrage
+'''
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -11,6 +13,22 @@ import logging
 
 
 def loadData(bond_file, rate_file):
+    '''Load data from bond and rate file.
+
+    Parameters
+    ----------
+    bond_file : filepath
+        可转债文件路径
+    rate_file : filepath
+        无风险利率文件路径
+
+    Returns
+    -------
+    bond : pandas.DataFrame
+        可转债数据
+    rate : pandas.DataFrame
+        无风险利率数据
+    '''
     # Input data
     #---------------------------------------
     logging.info('Loading data...')
@@ -41,7 +59,18 @@ def loadData(bond_file, rate_file):
 
 
 def loadResult(filename):
-    # load result from arbitrage computation
+    '''load result from arbitrage computation
+    
+    Parameters
+    ----------
+    filename : filepath
+        套利计算结果文件
+
+    Returns
+    -------
+    arbi : pandas.DataFrame
+        套利计算结果数据
+    '''
     with open(filename) as fin:
         arbi = pd.read_csv(fin, converters={'open':pd.to_datetime, 
                                     'close':pd.to_datetime})
@@ -49,7 +78,16 @@ def loadResult(filename):
 
 
 def maxDrawdown(return_list):
-    '''最大回撤率'''
+    '''计算最大回撤率
+    
+    Parameters
+    ----------
+    return_list : list like object
+
+    Returns
+    -------
+    最大回撤率, 开始位置, 结束位置
+    '''
     i = np.argmax((np.maximum.accumulate(return_list) - return_list) / np.maximum.accumulate(return_list))  # 结束位置
     if i == 0:
         return 0, 0, 0
@@ -58,6 +96,29 @@ def maxDrawdown(return_list):
 
 
 def calStatistics(bond, rate, arbi, isPlot=False):
+    '''计算可转债的统计指标: 年化收益率，年化波动率，
+    夏普比率，最大回撤率。
+    
+    Parameters
+    ----------
+    bond : pandas.DataFrame
+        可转债数据
+    rate : pandas.DateFrame 
+        无风险收益率数据
+    arbi : pandas.DataFrame
+        可转债套利计算结果数据
+
+    Returns
+    ar : float
+        年化收益率
+    asigma_g : float
+        年化波动率
+    sharpe : float
+        夏普比率
+    max_drawdown : float
+        最大回撤率
+    '''
+
     # 可转债净值NV
     #---------------------------------------
     # NV = bond.loc[:, ['Date', 'close']].copy()

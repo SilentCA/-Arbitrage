@@ -1,4 +1,20 @@
-#encoding=utf-8
+# -*- coding=utf-8 -*-
+'''An arbitrage computation module
+
+Example
+------
+导入模块使用函数calArbitrage()::
+
+    import arbitrage
+    arbitrage.calArbitrage(bondfile,shockfile,ratefile,savefile,figfile,statfile)
+
+这个函数将计算给定输入数据文件的套利，并将结果保存在指定文件。
+
+Notes
+-----
+
+'''
+
 import pandas as pd
 import numpy as np
 from scipy.stats import norm
@@ -9,25 +25,36 @@ import logging
 
 import statistics
 
-'''
-Question:
-'''
 
 # logging setting
 # logging.basicConfig(level=logging.INFO)
 
 
-def openPosition(open_day, bond, stock, rate, sigma_s):
-    ''' 计算开仓数据 '''
-    # 开仓时间
-    open_t = ((open_day['Date'] - open_day['carrydate']).days + 1) / 365
+def calDelta(open_t, S, K, r_rf, T, sigma_s_od):
+    '''计算开仓当天的delta 
 
-    # 计算d1
-    S = stock[ stock['Date'] == open_day['Date'] ]['close_stock'].iloc[0]  # 开仓当天股票价格
-    K = open_day['clause_conversion2_swapshareprice']              # 开仓当天转换价格
-    r_rf = rate[rate['Date'] == open_day['Date']]['rate'].iloc[0]          # 无风险利率
-    T = bond[bond['Date']==open_day['Date']]['term'].iloc[0]               # 债券到期年限
-    sigma_s_od = sigma_s[open_day.name]                         # 开仓日股票波动率
+    Parameters
+    ----------
+    open_t : float
+        开仓时间
+    S : float
+        开仓当天股票价格
+    K : float
+        开仓当天转换价格
+    r_rf : float
+        无风险利率
+    T : float
+        债券到期年限
+    sigma_s_od : float
+        开仓日股票波动率
+
+    Returns
+    -------
+    float
+        计算的delta结果。
+
+    
+    '''
 
     d1 = ( np.log(S/K) + (r_rf + np.square(sigma_s_od)/2) * (T-open_t) ) \
             / ( sigma_s_od * np.sqrt(T-open_t) )
@@ -39,7 +66,8 @@ def openPosition(open_day, bond, stock, rate, sigma_s):
 
 
 def calArbitrage(bond_file, stock_file, rate_file, save_file, fig_file,
-                 stat_file=None, is_show=False):
+                 stat_file=None, is_show=False, lday=None, rday=None,
+                phi2=0):
     '''计算套利
 
     Parameters
@@ -50,13 +78,22 @@ def calArbitrage(bond_file, stock_file, rate_file, save_file, fig_file,
         股票文件路径
     rate_file : filepath
         无风险利率文件路径
-    save_file: filepath
+    save_file : filepath
         套利计算结果保存文件路径
-    fig_file: filepath
+    fig_file : filepath
         套利计算结果图片保存文件路径
-    is_show: bool
+    stat_file : filepath, None
+        套利计算的统计指标保存文件路径
+        If None, do not save.
+    is_show : bool
         True: 显示结果图片
         False: 不显示结果图片
+    lday : datetime
+        bond计算开始日期，限制在[lday, rday]日期间计算套利
+    rday : datetime
+        bond计算结束日期，限制在[lday, rday]日期间计算套利
+    phi2 : float
+        phi2
     '''
 
     # Input File Setting
@@ -76,6 +113,7 @@ def calArbitrage(bond_file, stock_file, rate_file, save_file, fig_file,
     logging.info('stock file: {0}'.format(STOCK_FILE))
     logging.info('rate file: {0}'.format(RATE_FILE))
 
+    # bond file
     if os.path.splitext(BOND_FILE)[1] == '.csv':
         # csv file
         with open(BOND_FILE) as fin:  # support for chinese file name
@@ -87,6 +125,7 @@ def calArbitrage(bond_file, stock_file, rate_file, save_file, fig_file,
         with open(BOND_FILE,'rb') as fin:
             bond = pd.read_excel(fin)
 
+    # stock file
     if os.path.splitext(STOCK_FILE)[1] == '.csv':
         with open(STOCK_FILE) as fin:
             stock = pd.read_csv(fin, converters={'Date':pd.to_datetime})
@@ -94,6 +133,7 @@ def calArbitrage(bond_file, stock_file, rate_file, save_file, fig_file,
         with open(STOCK_FILE,'rb') as fin:
             stock = pd.read_excel(fin)
 
+    # rate file
     if os.path.splitext(RATE_FILE)[1] == '.csv':
         with open(RATE_FILE) as fin:
             rate = pd.read_csv(fin, converters={'Date':pd.to_datetime})
@@ -103,13 +143,16 @@ def calArbitrage(bond_file, stock_file, rate_file, save_file, fig_file,
 
     logging.info('Load data complete.')
 
-    # Set valid date time
-    # bond = bond[bond['Date']>pd.to_datetime('2018/03/01')].reset_index()
+    # Set calculation datetime section
+    if lday:
+        bond = bond[bond['Date']>=lday])
+    if rday:
+        bond = bond[bond['Date']<=rday])
+    bond = bond.reset_index()
 
     # Calculate Sigma_s and Sigma_c
     #---------------------------------------
     logging.info('Calculate sigma_s and sigma_c.')
-    #FIXME: definition of N and Nd
     # 可转债数据天数Nd
     Nd = bond.shape[0]
     # 交易天数N 
@@ -263,7 +306,20 @@ def calArbitrage(bond_file, stock_file, rate_file, save_file, fig_file,
         logging.info('Arbitrage window size: {0}'.format(t_alpha))
 
         # 计算delta
-        delta = openPosition(open_day, bond, stock, rate, sigma_s)
+        
+        # 开仓时间
+        open_t = ((open_day['Date'] - open_day['carrydate']).days + 1) / 365
+        # 开仓当天股票价格
+        S = stock[ stock['Date'] == open_day['Date'] ]['close_stock'].iloc[0]
+        # 开仓当天转换价格
+        K = open_day['clause_conversion2_swapshareprice']
+        # 无风险利率
+        r_rf = rate[rate['Date'] == open_day['Date']]['rate'].iloc[0]
+        # 债券到期年限
+        T = bond[bond['Date']==open_day['Date']]['term'].iloc[0]
+        # 开仓日股票波动率
+        sigma_s_od = sigma_s[open_day.name]
+        delta = calDelta(open_t, S, K, r_rf, T, sigma_s_od)
         delta_sum = delta_sum + delta
         logging.info('delta: {0}'.format(delta))
 
@@ -294,6 +350,7 @@ def calArbitrage(bond_file, stock_file, rate_file, save_file, fig_file,
     # output result in to file
     result.to_csv(SAVE_FILE, index=False)
 
+    # 计算指标
     arbi = statistics.loadResult(SAVE_FILE)
     # 年化收益率，年化波动率，夏普比率
     ar, asigma_g, sharpe, max_drawdown = statistics.calStatistics(bond,rate,arbi)
@@ -304,6 +361,7 @@ def calArbitrage(bond_file, stock_file, rate_file, save_file, fig_file,
                                      'sharpe','max_drawdown'])
         stat = stat.append(stat_data, ignore_index=True)
         stat.to_csv(stat_file, index=False)
+
     # plot result
     plt.clf()
     plt.plot(bond['Date'], sigma_s, bond['Date'], sigma_c,
