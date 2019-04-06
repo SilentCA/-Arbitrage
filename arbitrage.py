@@ -145,9 +145,11 @@ def calArbitrage(bond_file, stock_file, rate_file, save_file, fig_file,
 
     # Set calculation datetime section
     if lday:
-        bond = bond[bond['Date']>=lday])
+        bond = bond[bond['Date']>=lday]
+        logging.info('lday: {0}'.format(lday))
     if rday:
-        bond = bond[bond['Date']<=rday])
+        bond = bond[bond['Date']<=rday]
+        logging.info('rday: {0}'.format(rday))
     bond = bond.reset_index()
 
     # Calculate Sigma_s and Sigma_c
@@ -373,7 +375,10 @@ def calArbitrage(bond_file, stock_file, rate_file, save_file, fig_file,
     if is_show:
         plt.show()
 
-    return stat_data
+    return (stat_data,
+            sigma_c.rename(bond['Date']),
+            sigma_s.rename(bond['Date'])
+           )
 
 
 def test_calArbitrage_excel():

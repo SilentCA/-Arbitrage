@@ -1,6 +1,8 @@
 import os
 import pandas as pd
 import logging
+import matplotlib.pyplot as plt
+
 import arbitrage
 
 
@@ -39,6 +41,8 @@ bond_paths.sort()
 
 
 # 计算所有的可转债
+sigma_c_table = pd.DataFrame()
+sigma_s_table = pd.DataFrame()
 stat = pd.DataFrame(columns=['bond','delta_mean','ar', 'asigma_g', 'sharpe'])
 fail_list = []
 for idx, bond_path in enumerate(bond_paths):
@@ -66,17 +70,37 @@ for idx, bond_path in enumerate(bond_paths):
     # 计算套利
     stat_data = None
     try:
-        stat_data = arbitrage.calArbitrage(bond_file,stock_file,rate_file,
-                    save_file,fig_file,stat_file)
+        stat_data, sigma_c, sigma_s = arbitrage.calArbitrage(
+                    bond_file,stock_file,rate_file,
+                    save_file,fig_file,stat_file,
+                    lday=pd.to_datetime('2015/03/01'),
+                    rday=pd.to_datetime('2019/03/29'),
+                    phi2=-0.1)
+
+        stat_data['bond'] = bond_path
+        stat = stat.append(stat_data, ignore_index=True)
+        
+        sigma_s.name = idx
+        sigma_c.name = idx
+        sigma_s_table = sigma_s_table.join(sigma_s, how='outer')
+        sigma_c_table = sigma_c_table.join(sigma_c, how='outer')
     except:
         logging.info('Computing failure: {0}'.format(bond_path))
         fail_list.append(bond_path)
 
-    stat_data['bond'] = bond_path
-    stat = stat.append(stat_data, ignore_index=True)
 
     
 stat.to_csv(os.path.join(BOND_DIR,TOTAL_STAT_FILENAME),index=False)
+sigma_s_mean = sigma_s_table.mean(axis=1)
+sigma_c_mean = sigma_c_table.mean(axis=1)
+plt.clf()
+sigma_s_mean.plot()
+sigma_c_mean.plot()
+(sigma_s_mean - sigma_c_mean).plot()
+plt.legend(['Sigma_s', 'Sigma_c', 'Sigma_s - Sigma_c'])
+plt.show()
+
+
 
 logging.info('Failure when computing:')
 logging.info('\n'.join(fail_list))
